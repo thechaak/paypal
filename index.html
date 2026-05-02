@@ -7,6 +7,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="PayApp">
     
+    <!-- App Icons -->
+    <link rel="icon" type="image/png" href="pp-icon.png">
+    <link rel="apple-touch-icon" href="pp-icon.png">
+    
     <title>PayApp Flow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -82,23 +86,13 @@
             transition: opacity 0.3s ease-out;
         }
         
-        /* Spherical Scanning Animation overlay */
-        .scan-ring {
-            border-radius: 30px;
-            border: 4px solid transparent;
-            border-top-color: #0070ba;
-            border-bottom-color: #0070ba;
-            animation: spherical-scan 1s linear infinite, pulse-glow 1s ease-in-out infinite alternate;
+        /* Fast Checkmark Drawing Animation */
+        .draw-tick {
+            animation: drawTick 0.3s ease-out forwards;
         }
         
-        @keyframes spherical-scan {
-            0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(180deg) scale(1.05); }
-            100% { transform: rotate(360deg) scale(1); }
-        }
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 10px rgba(0, 112, 186, 0.2) inset; }
-            100% { box-shadow: 0 0 20px rgba(0, 112, 186, 0.6) inset; }
+        @keyframes drawTick {
+            to { stroke-dashoffset: 0; }
         }
     </style>
 </head>
@@ -123,14 +117,11 @@
             <!-- Default Face ID Image Uploaded -->
             <img id="face-id-default" src="image_a4f661.png" alt="Face ID" class="absolute w-full h-full object-contain z-10 rounded-[28px] shadow-sm">
 
-            <!-- Scanning Spherical Animation Ring (Hidden initially) -->
-            <div id="face-id-scan" class="scan-ring absolute w-[158px] h-[158px] z-20 opacity-0 transition-opacity duration-300"></div>
-
             <!-- Success Green Checkmark -->
             <div id="face-id-success" class="absolute flex items-center justify-center w-full h-full z-30 bg-[#f0f0f0] rounded-[28px]">
                 <div class="w-16 h-16 rounded-full flex items-center justify-center bg-white shadow-sm">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
+                        <polyline points="20 6 9 17 4 12" stroke-dasharray="50" stroke-dashoffset="50"></polyline>
                     </svg>
                 </div>
             </div>
@@ -212,11 +203,17 @@
                 </div>
 
                 <!-- Secondary Card (Credit Placeholder) -->
-                <div class="snap-center shrink-0 w-[85vw] max-w-[340px] bg-white rounded-3xl shadow-card p-5 border border-gray-100 flex flex-col">
+                <div class="snap-center shrink-0 w-[85vw] max-w-[340px] bg-white rounded-3xl shadow-card p-5 border border-gray-100 flex flex-col relative overflow-hidden">
                     <span class="font-medium text-[15px] mb-2 text-black">PayPal Credit</span>
                     <h3 class="text-[20px] font-bold mb-1">Apply and get a decision in seconds</h3>
                     <p class="text-[13px] text-gray-500">Representative 23.9% APR (variable)</p>
-                    <div class="mt-auto h-16 w-32 border-4 border-[#0070ba] rounded-full border-b-transparent border-r-transparent transform -rotate-45 relative -left-4 top-4"></div>
+                    <!-- Arc Arrow -->
+                    <div class="mt-auto pt-6 -ml-5">
+                        <svg class="w-[130px] h-[60px] pointer-events-none" viewBox="0 0 130 60" fill="none">
+                            <path d="M0 45 Q 60 -10 115 25" stroke="#0070ba" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+                            <path d="M 103 15 L 116 26 L 102 33" stroke="#0070ba" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                    </div>
                 </div>
             </div>
 
@@ -330,7 +327,6 @@
             const screenHome = document.getElementById('screen-home');
             
             const faceIdDefault = document.getElementById('face-id-default');
-            const faceIdScanRing = document.getElementById('face-id-scan');
             const faceIdSuccess = document.getElementById('face-id-success');
 
             // 1. Splash stays for 0.5s, then show Loading
@@ -343,28 +339,25 @@
                     screenLoading.classList.add('hide-screen');
                     screenFaceId.classList.remove('opacity-0', 'pointer-events-none');
                     
-                    // 3. Start Face ID "Scanning" Animation
+                    // 3. Fast Face ID Verification (0.3s delay)
                     setTimeout(() => {
-                        faceIdScanRing.classList.remove('opacity-0');
+                        faceIdDefault.classList.add('opacity-0');
+                        faceIdSuccess.classList.add('active');
                         
-                        // 4. Stop scanning, trigger Success Mark after 1.2s
+                        // Start the writing/drawing animation for the tick
+                        const tick = document.querySelector('#face-id-success polyline');
+                        tick.classList.add('draw-tick');
+                        
+                        // 4. Success shows for ~0.5s, then transition to Home Page
                         setTimeout(() => {
-                            faceIdScanRing.classList.add('opacity-0');
-                            faceIdDefault.classList.add('opacity-0');
-                            faceIdSuccess.classList.add('active');
+                            screenFaceId.classList.add('hide-screen');
+                            screenHome.classList.remove('opacity-0', 'pointer-events-none');
                             
-                            // 5. Success shows for 0.8s, then transition to Home Page
-                            setTimeout(() => {
-                                screenFaceId.classList.add('hide-screen');
-                                screenHome.classList.remove('opacity-0', 'pointer-events-none');
-                                
-                                // Reset scroll position to top
-                                screenHome.scrollTo(0, 0);
-                            }, 800);
+                            // Reset scroll position to top
+                            screenHome.scrollTo(0, 0);
+                        }, 500);
 
-                        }, 1200);
-
-                    }, 200); // Tiny delay before scanning starts for smoothness
+                    }, 300);
 
                 }, 800);
 
